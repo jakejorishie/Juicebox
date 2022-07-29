@@ -3,7 +3,6 @@ const { Client } = require("pg");
 const client = new Client("postgres://localhost:5432/juicebox-dev");
 
 
-
 const createUser = async ({ 
     username, 
     password, 
@@ -27,6 +26,7 @@ const createUser = async ({
   }
 };
 
+
 const updateUser = async(id, fields = {}) => {
     const setString = Object.keys(fields).map(
         (key, index) => `"${ key }"=$${ index + 1 }`
@@ -48,14 +48,41 @@ const updateUser = async(id, fields = {}) => {
     }
 }
 
+
 const getAllUsers = async () => {
+    try {
     const { rows } = await client.query(
       `SELECT id, username, name, location, active
       FROM users
       `
     );
     return rows;
-  };
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+const getUserById = async (userId) => {
+    try {
+      const { rows: [ user ] } = await client.query(`
+        SELECT id, username, name, location, active
+        FROM users
+        WHERE id=${ userId }
+      `);
+  
+      if (!user) {
+        return null
+      }
+  
+      user.posts = await getPostsByUser(userId);
+  
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 
   const createPost = async ({ 
     authorId, 
@@ -78,12 +105,12 @@ const getAllUsers = async () => {
   }
 };
 
+
 const updatePost = async(id, fields = {}) => {
     const setString = Object.keys(fields).map(
         (key, index) => `"${ key }"=$${ index + 1 }`
       ).join(', ');
     
-      // return early if this is called without fields
       if (setString.length === 0) {
         return;
       }
@@ -102,11 +129,44 @@ const updatePost = async(id, fields = {}) => {
       }
     }
 
+
+    const getAllPosts = async () => {
+        try {
+        const { rows } = await client.query(
+          `SELECT *
+          FROM posts
+          `
+        );
+        return rows;
+      } catch (error) {
+        throw error;
+      }
+    }
+
+
+    const getPostsByUser = async(userId) => {
+        try {
+          const { rows } = await client.query(`
+            SELECT * 
+            FROM posts
+            WHERE "authorId"=${ userId };
+          `);
+      
+          return rows;
+        } catch (error) {
+          throw error;
+        }
+      }
+
+
 module.exports = {
   client,
   getAllUsers,
   createUser,
   updateUser,
+  getUserById,
   createPost,
   updatePost,
+  getAllPosts,
+  getPostsByUser
 };
