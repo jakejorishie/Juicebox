@@ -387,4 +387,6 @@ module.exports = {
 	getPostsByTagName,
 	getUserByUsername,
 	getAllTags,
+	getPostById,
+	updatePost
 };
